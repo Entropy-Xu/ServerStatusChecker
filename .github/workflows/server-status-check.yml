@@ -21,6 +21,7 @@ on:
 jobs:
   check-status:
     runs-on: ubuntu-latest
+    environment: Basic
 
     steps:
       - name: Checkout repository
@@ -39,7 +40,6 @@ jobs:
         env:
           SENDKEY: ${{ secrets.SENDKEY }}
           CHECK_URLS: ${{ secrets.CHECK_URLS }}
-          DEFAULT_TIMEOUT: ${{ secrets.DEFAULT_TIMEOUT }}
           VERBOSE: 'true'
         run: |
           if [ -n "${{ github.event.inputs.url }}" ]; then
