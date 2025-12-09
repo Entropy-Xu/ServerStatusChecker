@@ -1,0 +1,50 @@
+name: Server Status Check
+
+on:
+  # 定时任务：每5分钟检查一次
+  schedule:
+    - cron: '*/5 * * * *'
+
+  # 支持手动触发
+  workflow_dispatch:
+    inputs:
+      url:
+        description: '要检查的单个URL（可选，留空则使用配置的URL列表）'
+        required: false
+        type: string
+      timeout:
+        description: '超时时间（秒）'
+        required: false
+        default: '10'
+        type: string
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run server status check
+        env:
+          SENDKEY: ${{ secrets.SENDKEY }}
+          CHECK_URLS: ${{ secrets.CHECK_URLS }}
+          DEFAULT_TIMEOUT: ${{ secrets.DEFAULT_TIMEOUT }}
+          VERBOSE: 'true'
+        run: |
+          if [ -n "${{ github.event.inputs.url }}" ]; then
+            python server_status_checker.py -u "${{ github.event.inputs.url }}" -t ${{ github.event.inputs.timeout || '10' }}
+          else
+            python server_status_checker.py
+          fi
+
