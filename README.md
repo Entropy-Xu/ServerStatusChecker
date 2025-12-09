@@ -22,21 +22,32 @@
 
 点击右上角的 Fork 按钮，将仓库 fork 到你的账号下。
 
-#### 2. 配置 Secrets
+#### 2. 配置 Environment 和 Secrets
 
-在你 fork 的仓库中，进入 **Settings** → **Secrets and variables** → **Actions**，添加以下 Secrets：
+由于工作流使用了 `environment: Basic`，你需要创建一个名为 `Basic` 的 Environment 并在其中配置 Secrets。
+
+**步骤：**
+
+1. 进入你 fork 的仓库，点击 **Settings**
+2. 在左侧菜单中点击 **Environments**
+3. 点击 **New environment**
+4. 输入名称 `Basic`，点击 **Configure environment**
+5. 在 **Environment secrets** 部分，点击 **Add secret** 添加以下 Secrets：
 
 | Secret 名称 | 必填 | 说明 |
 |------------|------|------|
 | `SENDKEY` | ✅ | Server酱的 SendKey，从 [Server酱官网](https://sct.ftqq.com/) 获取 |
 | `CHECK_URLS` | ✅ | 要检查的URL列表，JSON格式（见下方示例） |
-| `DEFAULT_TIMEOUT` | ❌ | 默认超时时间（秒），默认为 10 |
+
+> ⚠️ **注意**：Secrets 必须添加到 `Basic` Environment 中，而不是 Repository secrets，否则工作流无法读取到这些变量。
 
 **CHECK_URLS 格式示例：**
 
 ```json
 [{"name":"我的网站","url":"https://www.example.com","timeout":10},{"name":"API服务","url":"https://api.example.com/health","timeout":5}]
 ```
+
+> 💡 **提示**：JSON 必须写成一行，不能有换行符。
 
 #### 3. 启用 GitHub Actions
 
@@ -149,9 +160,11 @@ python server_status_checker.py --test-push
 |--------|------|------|--------|
 | `SENDKEY` | ✅ | Server酱 SendKey | - |
 | `CHECK_URLS` | ✅ | URL列表（JSON格式） | - |
-| `DEFAULT_TIMEOUT` | ❌ | 默认超时时间（秒） | 10 |
-| `CHECK_INTERVAL` | ❌ | 检查间隔（秒） | 300 |
+| `DEFAULT_TIMEOUT` | ❌ | 默认超时时间（秒），留空则使用默认值 | 10 |
+| `CHECK_INTERVAL` | ❌ | 检查间隔（秒），留空则使用默认值 | 300 |
 | `VERBOSE` | ❌ | 是否启用详细日志 | true |
+
+> 💡 **提示**：在 GitHub Actions 中，可选的环境变量如果不需要设置，直接不添加对应的 Secret 即可，程序会自动使用默认值。
 
 ## 推送效果
 
@@ -184,6 +197,43 @@ crontab -e
 
 # 每5分钟检查一次
 */5 * * * * SENDKEY=xxx CHECK_URLS='[...]' /usr/bin/python3 /path/to/server_status_checker.py >> /var/log/server_check.log 2>&1
+```
+
+## 常见问题
+
+### Q: 工作流运行失败，提示 Secrets 读取为空？
+
+**A**: 请确保 Secrets 是添加到 `Basic` Environment 中的，而不是 Repository secrets。具体步骤：
+1. Settings → Environments → 点击 `Basic`（如果没有则新建）
+2. 在 Environment secrets 中添加 `SENDKEY` 和 `CHECK_URLS`
+
+### Q: 报错 `ValueError: invalid literal for int()`？
+
+**A**: 这是因为 `DEFAULT_TIMEOUT` 被设置为空字符串。解决方法：
+- 如果不需要自定义超时时间，不要添加 `DEFAULT_TIMEOUT` Secret
+- 如果要添加，确保值是一个有效的数字（如 `10`）
+
+### Q: CHECK_URLS 格式怎么写？
+
+**A**: 必须是有效的 JSON 格式，且写成一行：
+```json
+[{"name":"网站名","url":"https://example.com","timeout":10}]
+```
+
+多个 URL 用逗号分隔：
+```json
+[{"name":"网站1","url":"https://example1.com","timeout":10},{"name":"网站2","url":"https://example2.com","timeout":5}]
+```
+
+### Q: 如何修改检查频率？
+
+**A**: 编辑 `.github/workflows/server-status-check.yml` 中的 cron 表达式：
+```yaml
+schedule:
+  - cron: '*/5 * * * *'   # 每5分钟（默认）
+  - cron: '*/10 * * * *'  # 每10分钟
+  - cron: '0 * * * *'     # 每小时
+  - cron: '0 */6 * * *'   # 每6小时
 ```
 
 ## License
