@@ -25,11 +25,18 @@ def get_urls_from_env():
 
 URLS_TO_CHECK = get_urls_from_env()
 
+# 辅助函数：获取环境变量的整数值，处理空字符串的情况
+def get_int_env(name, default):
+    value = os.environ.get(name, "")
+    if value.strip():
+        return int(value)
+    return default
+
 # 默认超时时间（秒）
-DEFAULT_TIMEOUT = int(os.environ.get("DEFAULT_TIMEOUT", "10"))
+DEFAULT_TIMEOUT = get_int_env("DEFAULT_TIMEOUT", 10)
 
 # 检查间隔（秒），用于定时检查模式
-CHECK_INTERVAL = int(os.environ.get("CHECK_INTERVAL", "300"))  # 5分钟
+CHECK_INTERVAL = get_int_env("CHECK_INTERVAL", 300)  # 5分钟
 
 # 是否启用详细日志
-VERBOSE = os.environ.get("VERBOSE", "true").lower() == "true"
+VERBOSE = os.environ.get("VERBOSE", "true").lower() in ("true", "1", "")
